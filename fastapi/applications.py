@@ -8,6 +8,7 @@ from fastapi import routing
 from fastapi.datastructures import Default, DefaultPlaceholder
 from fastapi.exception_handlers import (
     http_exception_handler,
+    internal_server_error_handler,
     request_validation_exception_handler,
     websocket_request_validation_exception_handler,
 )
@@ -1021,7 +1022,7 @@ class FastAPI(Starlette):
         # Duplicate/override from Starlette to add AsyncExitStackMiddleware
         # inside of ExceptionMiddleware, inside of custom user middlewares
         debug = self.debug
-        error_handler = None
+        error_handler: ExceptionHandler | None = internal_server_error_handler
         exception_handlers: dict[Any, ExceptionHandler] = {}
 
         for key, value in self.exception_handlers.items():

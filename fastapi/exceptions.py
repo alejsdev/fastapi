@@ -42,6 +42,11 @@ class HTTPException(StarletteHTTPException):
     ```
     """
 
+    # Keep `Any` for compatibility: FastAPI has historically accepted and stored JSON-compatible non-string values.
+    # The default Problem Details handler omits those values because RFC 9457 defines `detail` as a string,
+    # but custom handlers can still access the original value here.
+    detail: Any
+
     def __init__(
         self,
         status_code: Annotated[
@@ -59,8 +64,11 @@ class HTTPException(StarletteHTTPException):
             Any,
             Doc(
                 """
-                Any data to be sent to the client in the `detail` key of the JSON
-                response.
+                Data describing this error occurrence.
+
+                The default Problem Details handler includes string values in the
+                `detail` member and omits non-string values. Use
+                `ProblemDetailsException` extensions for structured error contracts.
 
                 Read more about it in the
                 [FastAPI docs for Handling Errors](https://fastapi.tiangolo.com/tutorial/handling-errors/#use-httpexception)
@@ -81,6 +89,48 @@ class HTTPException(StarletteHTTPException):
         ] = None,
     ) -> None:
         super().__init__(status_code=status_code, detail=detail, headers=headers)
+
+
+class ProblemDetailsException(HTTPException):
+    """An HTTP exception represented as an RFC 9457 Problem Details object."""
+
+    _standard_members = {"type", "title", "status", "detail", "instance"}
+    detail: str | None
+    type: str
+    title: str | None
+    instance: str | None
+    extensions: dict[str, Any]
+
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        type_: str = "about:blank",
+        title: str | None = None,
+        detail: str | None = None,
+        instance: str | None = None,
+        headers: Mapping[str, str] | None = None,
+        extensions: Mapping[str, Any] | None = None,
+    ) -> None:
+        extension_members = dict(extensions or {})
+        reserved_members = self._standard_members.intersection(extension_members)
+        if reserved_members:
+            members = ", ".join(sorted(reserved_members))
+            raise ValueError(
+                f"Extensions cannot replace reserved Problem Details members: {members}"
+            )
+        super().__init__(
+            status_code=status_code,
+            detail=detail if detail is not None else "",
+            headers=headers,
+        )
+        self.detail = detail
+        # Starlette stores only status_code, detail, and headers. Keep the remaining
+        # RFC 9457 members for FastAPI's Problem Details exception handler.
+        self.type = type_
+        self.title = title
+        self.instance = instance
+        self.extensions = extension_members
 
 
 class WebSocketException(StarletteWebSocketException):

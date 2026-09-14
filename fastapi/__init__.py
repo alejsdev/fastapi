@@ -8,6 +8,7 @@ from .applications import FastAPI as FastAPI
 from .background import BackgroundTasks as BackgroundTasks
 from .datastructures import UploadFile as UploadFile
 from .exceptions import HTTPException as HTTPException
+from .exceptions import ProblemDetailsException as ProblemDetailsException
 from .exceptions import WebSocketException as WebSocketException
 from .param_functions import Body as Body
 from .param_functions import Cookie as Cookie
@@ -18,6 +19,7 @@ from .param_functions import Header as Header
 from .param_functions import Path as Path
 from .param_functions import Query as Query
 from .param_functions import Security as Security
+from .problem_details import ProblemDetails as ProblemDetails
 from .requests import Request as Request
 from .responses import Response as Response
 from .routing import APIRouter as APIRouter
